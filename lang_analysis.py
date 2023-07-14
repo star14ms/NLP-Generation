@@ -17,34 +17,38 @@ def read_data(data_path: str) -> list[str]:
     return lines
 
 
-def detect_language(texts: list[str]) -> list[dict]:
+def detect_language(texts: list[str], dest_path: str) -> list[dict]:
     len_texts = len(texts)
     task_id = progress.add_task(f'Detecting language (0/{len_texts})', total=len_texts)
     result = []
 
-    for idx, text in enumerate(texts):
-        text = text.strip()
-        if text:
-            try:
-                detected_lang = detect(text)
-            except LangDetectException:
-                detected_lang = 'unknown'
-            except:
-                breakpoint()
+    with open(dest_path, 'w', encoding='utf-8') as f:
+        for idx, text in enumerate(texts):
+            text = text.strip()
+            if text:
+                try:
+                    detected_lang = detect(text)
+                except LangDetectException:
+                    detected_lang = 'unknown'
+                except:
+                    breakpoint()
+    
+                result.append({
+                    'id': idx,
+                    'lang': detected_lang,
+                    'text': text,
+                })
+    
+                if detected_lang == 'en':
+                    f.write(text + '\n')
 
-            result.append({
-                'id': idx,
-                'lang': detected_lang,
-                'text': text,
-            })
-
-        progress.log(detected_lang, text)
-        progress.update(
-            task_id=task_id,
-            advance=1,
-            description=f'Detecting language ({idx+1}/{len_texts})',
-            refresh=True,
-        )
+            progress.log(detected_lang, text)
+            progress.update(
+                task_id=task_id,
+                advance=1,
+                description=f'Detecting language ({idx+1}/{len_texts})',
+                refresh=True,
+            )
 
     return result
 
@@ -74,7 +78,7 @@ def get_language_ratio(texts: list[str]) -> dict[str, int]:
     return result
 
 
-def save_data(data: list[dict], save_path: str) -> None:
+def save_data_to_csv(data: list[dict], save_path: str) -> None:
     '''
     data = [
         {'id': 0, 'lang': 'en', 'text': '...'},
@@ -98,19 +102,9 @@ def iso639_1_to_name(code: str) -> str:
     return languages.get(alpha_2=code).name
 
 
-if __name__ == '__main__':
-    file_path = 'data/yt_cmts_230624.txt'
-    save_path = 'data/yt_cmts_230624.csv'
-
-    progress = new_progress()
-    # progress.start()
-    
-    # texts = read_data(file_path)
-    # result = detect_language(texts)
-    # save_data(result, save_path)
-
+def language_analysis(data_path: str) -> None:
     # Read data from CSV file
-    df = pd.read_csv(save_path)
+    df = pd.read_csv(data_path)
 
     # Convert ISO 639-1 codes to full language names
     df['lang'] = df['lang'].map(iso639_1_to_name)
@@ -120,3 +114,18 @@ if __name__ == '__main__':
 
     # Plot pie chart
     plot_pie_lang_ratio_v4(lang_counts)
+
+
+if __name__ == '__main__':
+    file_path = 'data/yt_cmts_230624.txt'
+    dest_path = 'data/yt_cmts_230624_en.txt'
+    save_path = 'data/yt_cmts_230624.csv'
+
+    progress = new_progress()
+    progress.start()
+    
+    texts = read_data(file_path)
+    result = detect_language(texts, dest_path)
+    # save_data_to_csv(result, save_path)
+
+    # language_analysis(save_path)
