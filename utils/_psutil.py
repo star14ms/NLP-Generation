@@ -19,15 +19,16 @@ def print_memory_info():
     memory = psutil.virtual_memory()
 
     print('CPU usage: {} %'.format(psutil.cpu_percent()))
-    print('Memory usage: {:.2f} / {:.2f} GB, {} %'.format(
+    print('Memory usage: {} % ({:.2f} / {:.2f} GB)'.format(
+        memory.percent,
         memory.used / (1024.0 ** 3), 
         memory.total / (1024.0 ** 3), 
-        memory.percent
     ))
 
 
-while True:
-    cpu_usage = psutil.cpu_percent()
-    mem_usage = psutil.virtual_memory().percent
-    display_usage(cpu_usage, mem_usage)
-    time.sleep(1)
+if __name__ == '__main__':
+    while True:
+        cpu_usage = psutil.cpu_percent()
+        mem_usage = psutil.virtual_memory().percent
+        display_usage(cpu_usage, mem_usage)
+        time.sleep(1)
