@@ -5,6 +5,9 @@ from config import get_default_config
 from model import Transformer
 from rich import print
 
+data_file = 'data/yt_cmts_230624_en.txt'
+tokenizer_file = 'data/tokenizer.json'
+dataset = YTCommentDataset(data_file, tokenizer_file)
 
 def generate(model, x, max_len=20, end_token_id=3):
     model.eval()
@@ -44,5 +47,5 @@ if __name__ == '__main__':
         y = generate(model, x)
 
         output_text = dataset.decode(y[0])
-        
+
         print('Output text:', output_text)

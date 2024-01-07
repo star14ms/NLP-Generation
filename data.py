@@ -4,6 +4,12 @@ from tokenizers import Tokenizer
 from torch.nn.utils.rnn import pad_sequence
 
 
+tokenizer_file = 'data/tokenizer.json'
+
+tokenizer = Tokenizer.from_file(tokenizer_file)
+padding_value = tokenizer.token_to_id('[PAD]')
+
+
 class YTCommentDataset(Dataset):
     def __init__(self, data_file, tokenizer_file):
         super().__init__()
@@ -24,11 +30,11 @@ class YTCommentDataset(Dataset):
         line = self.lines[idx].strip()
 
         # encode the line
-        encoded = self.tokenizer.encode(line)
+        encoded = self.tokenizer.encode(f'[SOS] {line} [EOS]')
 
         # convert to torch tensor
-        x = torch.tensor(encoded.ids)
-        y = torch.tensor(encoded.ids[1:] + [2])
+        x = torch.tensor(encoded.ids[:-1])
+        y = torch.tensor(encoded.ids[1:])
 
         return x, y
     
@@ -42,14 +48,12 @@ class YTCommentDataset(Dataset):
 
 
 def collate_fn(batch):
-    data = [item[0] for item in batch]
-    data = pad_sequence(data, batch_first=True, padding_value=0)
-    
-    targets = [item[1] for item in batch]
-    targets = pad_sequence(targets, batch_first=True, padding_value=0)
-    
-    return data, targets
+    x, y = zip(*batch)
 
+    x = pad_sequence(x, batch_first=True, padding_value=padding_value)
+    y = pad_sequence(y, batch_first=True, padding_value=padding_value)
+
+    return x, y
 
 def get_dataloader(data_file, tokenizer_file, batch_size=4, shuffle=True):
     dataset = YTCommentDataset(data_file, tokenizer_file)
@@ -62,10 +66,15 @@ if __name__ == '__main__':
     data_file = 'data/yt_cmts_230624_en.txt'
     tokenizer_file = 'data/tokenizer.json'
 
+    tokenizer = Tokenizer.from_file(tokenizer_file)
+    padding_value = tokenizer.token_to_id('[PAD]')
     dataset = YTCommentDataset(data_file, tokenizer_file)
-    dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
 
     x, y = dataset[0]
+
+    print(x)
+    print(y)
 
     print(dataset.decode(x))
     print(dataset.decode(y))
